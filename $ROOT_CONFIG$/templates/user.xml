@@ -1,0 +1,14 @@
+<templateSet group="user">
+  <template name="test" value="@org.junit.Test&#10;public void supports$METHOD$() throws Exception {&#10;    $END$&#10;}" toReformat="true" toShortenFQNames="true" useStaticImport="true">
+    <variable name="METHOD" expression="" defaultValue="" alwaysStopAt="true" />
+    <context>
+      <option name="JAVA_CODE" value="true" />
+      <option name="JAVA_STATEMENT" value="true" />
+      <option name="JAVA_EXPRESSION" value="true" />
+      <option name="JAVA_DECLARATION" value="true" />
+      <option name="JAVA_COMMENT" value="true" />
+      <option name="JAVA_STRING" value="true" />
+      <option name="COMPLETION" value="true" />
+    </context>
+  </template>
+</templateSet>
