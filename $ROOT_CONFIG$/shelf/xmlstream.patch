@@ -1,0 +1,79 @@
+Index: test/com/googlecode/totallylazy/xml/XmlReaderTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- test/com/googlecode/totallylazy/xml/XmlReaderTest.java	(date 1432970584000)
++++ test/com/googlecode/totallylazy/xml/XmlReaderTest.java	(revision )
+@@ -1,8 +1,9 @@
+ package com.googlecode.totallylazy.xml;
+ 
+-import com.googlecode.totallylazy.Callable1;
++import com.googlecode.totallylazy.Iterators;
+ import com.googlecode.totallylazy.Pair;
+ import com.googlecode.totallylazy.Rules;
++import com.googlecode.totallylazy.Runnables;
+ import com.googlecode.totallylazy.Sequence;
+ import com.googlecode.totallylazy.Xml;
+ import com.googlecode.totallylazy.iterators.StatefulIterator;
+@@ -14,6 +15,7 @@
+ 
+ import static com.googlecode.totallylazy.Maps.map;
+ import static com.googlecode.totallylazy.Pair.pair;
++import static com.googlecode.totallylazy.Sequences.forwardOnly;
+ import static com.googlecode.totallylazy.Sequences.memorise;
+ import static com.googlecode.totallylazy.matchers.IterableMatcher.hasExactly;
+ import static com.googlecode.totallylazy.matchers.Matchers.is;
+@@ -28,13 +30,16 @@
+     @Test
+     public void canStreamIntoAMap() throws Exception {
+         String xml = "<stream><user><first>Dan</first><dob>1977</dob></user><user><first>Jason</first><dob>1978</dob></user></stream>";
+-        Sequence<Location> locations =  memorise(xmlReader(new StringReader(xml)).iterator(descendant(name("user"))));
++        Sequence<Location> locations =  forwardOnly(xmlReader(new StringReader(xml)).iterator(descendant(name("user"))));
+         Sequence<Map<String, String>> users = locations.map(user -> {
+             StatefulIterator<Pair<String, String>> iterator = user.stream().
+                     iterator(Rules.<Location, Pair<String, String>>rules().
+                     addFirst(descendant(name("first").or(name("dob"))), field -> pair(currentName(field), text(field))));
+-            return map(memorise(iterator));
+-        }).memoize();
++            return map(memorise(Iterators.map(iterator, pair -> {
++                System.out.println("pair = " + pair);
++                return pair;
++            })));
++        });
+         assertThat(users, hasExactly(map("first", "Dan", "dob", "1977"), map("first", "Jason", "dob", "1978")));
+     }
+ 
+Index: src/com/googlecode/totallylazy/xml/XmlReader.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/com/googlecode/totallylazy/xml/XmlReader.java	(date 1432970584000)
++++ src/com/googlecode/totallylazy/xml/XmlReader.java	(revision )
+@@ -17,6 +17,7 @@
+ import javax.xml.stream.events.XMLEvent;
+ import java.io.Reader;
+ import java.util.Iterator;
++import java.util.concurrent.atomic.AtomicInteger;
+ 
+ import static com.googlecode.totallylazy.LazyException.lazyException;
+ import static com.googlecode.totallylazy.Option.none;
+@@ -56,13 +57,17 @@
+         return iterator((Location location) -> rules.find(location).map(rule -> rule.call(location)));
+     }
+ 
++    private static final AtomicInteger count = new AtomicInteger();
+     public <T> StatefulIterator<T> iterator(Callable1<? super Location, ? extends Option<T>> callable) {
+         return new StatefulIterator<T>() {
++            private int c = count.incrementAndGet();
+             private Location path = new Location(reader);
+             @Override
+             protected T getNext() throws Exception {
++                System.out.println("getNext on Iterator " + c);
+                 while (reader.hasNext()) {
+                     XMLEvent event = reader.nextEvent();
++                    System.out.println("event = " + event);
+                     if (event instanceof EndElement) {
+                         path = path.remove();
+                     }
