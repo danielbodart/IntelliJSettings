@@ -1,0 +1,104 @@
+Index: src/com/googlecode/totallylazy/Predicates.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/com/googlecode/totallylazy/Predicates.java	(revision 802a80fd15601d8f29576077b9121530d1eb5bbf)
++++ src/com/googlecode/totallylazy/Predicates.java	(revision )
+@@ -414,6 +414,11 @@
+             public boolean matches(T other) {
+                 return expected == other;
+             }
++
++            @Override
++            public String toString() {
++                return "sameInstance(" + expected + ")";
++            }
+         };
+     }
+ }
+Index: test/com/googlecode/totallylazy/xml/streaming/ContextTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- test/com/googlecode/totallylazy/xml/streaming/ContextTest.java	(revision 802a80fd15601d8f29576077b9121530d1eb5bbf)
++++ test/com/googlecode/totallylazy/xml/streaming/ContextTest.java	(revision )
+@@ -6,6 +6,9 @@
+ import org.w3c.dom.Node;
+ 
+ import java.io.StringReader;
++import java.lang.ref.PhantomReference;
++import java.lang.ref.ReferenceQueue;
++import java.util.Iterator;
+ 
+ import static com.googlecode.totallylazy.Assert.assertThat;
+ import static com.googlecode.totallylazy.Predicates.is;
+\ No newline at end of file
+Index: test/com/googlecode/totallylazy/xml/streaming/GarbageCollectionTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- test/com/googlecode/totallylazy/xml/streaming/GarbageCollectionTest.java	(revision )
++++ test/com/googlecode/totallylazy/xml/streaming/GarbageCollectionTest.java	(revision )
+@@ -0,0 +1,59 @@
++package com.googlecode.totallylazy.xml.streaming;
++
++import com.googlecode.totallylazy.Segment;
++import com.googlecode.totallylazy.iterators.SegmentIterator;
++import com.googlecode.totallylazy.time.SystemClock;
++import org.junit.Test;
++
++import java.io.StringReader;
++import java.lang.ref.PhantomReference;
++import java.lang.ref.Reference;
++import java.lang.ref.ReferenceQueue;
++import java.util.ArrayList;
++import java.util.Iterator;
++import java.util.List;
++
++import static com.googlecode.totallylazy.Assert.assertThat;
++import static com.googlecode.totallylazy.Predicates.is;
++import static com.googlecode.totallylazy.Predicates.nullValue;
++import static com.googlecode.totallylazy.Predicates.sameInstance;
++
++public class GarbageCollectionTest {
++    @Test
++    public void supportsCollectingHead() throws Exception {
++        ReferenceQueue<Segment<Character>> queue = new ReferenceQueue<>();
++        List<Reference<Segment<Character>>> references = new ArrayList<>();
++        Iterator<Character> iterator = mustCreateInAnotherMethod(queue, references);
++        System.gc();
++        assertThat(queue.poll(), nullValue());
++        int index = 0;
++        while (iterator.hasNext()){
++            index++;
++            Character character = iterator.next();
++            System.out.println("character = " + character);
++            System.gc();
++            System.out.println(references.indexOf(queue.remove()));
++        }
++    }
++
++    private Iterator<Character> mustCreateInAnotherMethod(ReferenceQueue<Segment<Character>> queue, List<Reference<Segment<Character>>> references) {
++        Segment<Character> original = Segment.constructors.characters(new StringReader("abcd"));
++        List<Segment<Character>> segments = new ArrayList<>();
++        Segment<Character> characters = original;
++        while (!characters.isEmpty()){
++            segments.add(characters);
++            references.add(new PhantomReference<>(characters, queue));
++            characters = characters.tail();
++        }
++
++        Segment<Character> check = original;
++        int index = 0;
++        while (!check.isEmpty()){
++            assertThat(segments.get(index++), sameInstance(check));
++            check = check.tail();
++        }
++
++        return SegmentIterator.iterator(original);
++    }
++
++}
