@@ -5,6 +5,7 @@
       <mapping pattern="Dockerfile" type="PLAIN_TEXT" />
       <mapping pattern="run" type="PLAIN_TEXT" />
       <mapping ext="conf" type="PLAIN_TEXT" />
+      <mapping ext="st" type="PLAIN_TEXT" />
     </extensionMap>
   </component>
 </application>
