@@ -1,5 +1,9 @@
 <application>
   <component name="PathMacrosImpl">
     <macro name="KOTLIN_BUNDLED" value="/home/dan/Applications/IntelliJ/idea-IU-145.971.21/plugins/Kotlin/kotlinc" />
+    <ignoredMacro name="MESSAGE" />
+    <ignoredMacro name="FILE_PATH" />
+    <ignoredMacro name="LINE" />
+    <ignoredMacro name="COLUMN" />
   </component>
 </application>
